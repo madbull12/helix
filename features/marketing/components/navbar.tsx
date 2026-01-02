@@ -5,7 +5,10 @@ import { Menu } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-
+import {
+  RegisterLink,
+  LoginLink,
+} from "@kinde-oss/kinde-auth-nextjs/components";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Navbar as NavbarComponent,
@@ -114,29 +117,11 @@ export default function Navbar({
             {showNavigation && (customNavigation || <Navigation />)}
           </NavbarLeft>
           <NavbarRight>
-            {actions.map((action, index) =>
-              action.isButton ? (
-                <Button
-                  key={index}
-                  variant={action.variant || "default"}
-                  asChild
-                >
-                  <a href={action.href}>
-                    {action.icon}
-                    {action.text}
-                    {action.iconRight}
-                  </a>
-                </Button>
-              ) : (
-                <a
-                  key={index}
-                  href={action.href}
-                  className="hidden text-sm md:block"
-                >
-                  {action.text}
-                </a>
-              )
-            )}
+            <LoginLink className="text-sm font-medium">Sign in</LoginLink>
+
+            <Button asChild>
+              <RegisterLink>Get Started</RegisterLink>
+            </Button>
             <ThemeToggleButton
               theme={theme}
               onClick={handleThemeToggle}

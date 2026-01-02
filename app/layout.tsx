@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
 const geistSans = Geist({
@@ -14,7 +15,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-
 export const metadata: Metadata = {
   title: {
     default: "Helix — Clarity for how your team works",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description:
     "Helix is an AI-native workspace that turns team conversations into clarity, decisions, and action — without the noise.",
   applicationName: "Helix",
-  metadataBase: new URL("https://usehelix.com"), 
+  metadataBase: new URL("https://usehelix.com"),
   keywords: [
     "AI workspace",
     "team communication",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     siteName: "Helix",
     images: [
       {
-        url: "/og.png", 
+        url: "/og.png",
         width: 1200,
         height: 630,
         alt: "Helix — AI Workspace",
@@ -74,26 +74,27 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={notoSans.variable} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+    <AuthProvider>
+      <html lang="en" className={notoSans.variable} suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </AuthProvider>
   );
 }
