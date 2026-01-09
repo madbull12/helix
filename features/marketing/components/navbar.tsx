@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   RegisterLink,
   LoginLink,
+  LogoutLink,
 } from "@kinde-oss/kinde-auth-nextjs/components";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -24,7 +25,8 @@ import {
 import { useTheme } from "next-themes";
 import HelixLogo from "@/components/logos/helix";
 import { fadeBottomVariant } from "@/lib/motion-variants";
-
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import Link from "next/link";
 interface NavbarLink {
   text: string;
   href: string;
@@ -79,7 +81,8 @@ export default function Navbar({
   const { setTheme, theme } = useTheme();
   const { startTransition } = useThemeTransition();
   const [mounted, setMounted] = useState(false);
-
+  const { isAuthenticated, getUser, isLoading } = useKindeBrowserClient();
+  const user = getUser();
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -117,11 +120,37 @@ export default function Navbar({
             {showNavigation && (customNavigation || <Navigation />)}
           </NavbarLeft>
           <NavbarRight>
-            <LoginLink className="text-sm font-medium">Sign in</LoginLink>
+            {isLoading ? null : (
+              <>
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className={buttonVariants({
+                        size: "sm",
+                      })}
+                    >
+                      Dashboard
+                    </Link>
+                    <LogoutLink className={buttonVariants({
+                      size:"sm",
+                      variant:"ghost"
+                    })}>Logout</LogoutLink>
+                  </>
+                ) : (
+                  <>
+                    <LoginLink className="text-sm font-medium">
+                      Sign in
+                    </LoginLink>
 
-            <Button asChild>
-              <RegisterLink>Get Started</RegisterLink>
-            </Button>
+                    <Button asChild>
+                      <RegisterLink>Get Started</RegisterLink>
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+
             <ThemeToggleButton
               theme={theme}
               onClick={handleThemeToggle}
