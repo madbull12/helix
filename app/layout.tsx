@@ -1,8 +1,10 @@
+import "@/lib/orpc.server"
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { Providers } from "@/components/providers/tanstack-provider";
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
 const geistSans = Geist({
@@ -91,7 +93,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <Providers>
             {children}
+
+
+            </Providers>
           </ThemeProvider>
         </body>
       </html>
