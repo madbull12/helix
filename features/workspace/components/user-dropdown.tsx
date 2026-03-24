@@ -14,13 +14,20 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-const UserDropdown = () => {
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+
+function getAvatar(userPicture: string | null | undefined, userEmail: string) {
+  return userPicture ?? `https://avatar.vercel.sh/${userEmail}`;
+}
+const UserDropdown = async () => {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+  console.log("User: ", user)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="self-center">
         <Avatar>
-          <AvatarImage src="https://github.com/shadcn.png" />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarImage src={getAvatar(user?.picture, user?.email!)} />
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="right">

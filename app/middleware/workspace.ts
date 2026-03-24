@@ -8,7 +8,6 @@ export const requiredWorkspaceMiddleware = base
   }>()
   .middleware(async ({ context: ctx, next,errors }) => {
     const workspace = ctx.workspace ?? ((await getWorkspace()).workspace);
-
     if (!workspace) {
       throw errors.FORBIDDEN()
     }

@@ -125,7 +125,7 @@ export default function Navbar({
                 {user ? (
                   <>
                     <Link
-                      href="/dashboard"
+                      href="/workspace"
                       className={buttonVariants({
                         size: "sm",
                       })}
@@ -139,7 +139,7 @@ export default function Navbar({
                   </>
                 ) : (
                   <>
-                    <LoginLink className="text-sm font-medium">
+                    <LoginLink postLoginRedirectURL="/workspace" className="text-sm font-medium">
                       Sign in
                     </LoginLink>
 

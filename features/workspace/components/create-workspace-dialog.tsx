@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -23,12 +23,43 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import * as z from "zod";
-const createWorkspaceSchema = z.object({
-  name: z.string().min(1, {
-    error: "Name shouldn't be empty",
-  }),
-});
+import { createWorkspaceSchema } from "@/lib/schemas/workspace";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { toast } from "sonner";
+import { useState } from "react";
+import { isDefinedError } from "@orpc/client";
+
 const CreateWorkspaceDialog = () => {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const createWorkspaceMutation = useMutation(
+    orpc.workspace.create.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Successfully created ${data.workspaceName}`);
+        form.reset();
+        setOpen(false);
+      },
+      onError: (error) => {
+        if (isDefinedError(error)) {
+          if (error.code === "RATE_LIMITED") {
+            toast.error(error.message);
+            return;
+          }
+          toast.error(error.message)
+          return 
+        }
+
+        toast.error("Failed to create a workspace. Try again later")
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({
+          queryKey: orpc.workspace.list.queryKey(),
+        });
+      },
+    }),
+  );
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -37,11 +68,13 @@ const CreateWorkspaceDialog = () => {
       onSubmit: createWorkspaceSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      createWorkspaceMutation.mutate({
+        name: value.name,
+      });
     },
   });
   return (
-    <Credenza>
+    <Credenza open={open} onOpenChange={setOpen}>
       <CredenzaTrigger asChild>
         <Button
           variant={"outline"}
@@ -75,9 +108,7 @@ const CreateWorkspaceDialog = () => {
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Name
-                      </FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Name</FieldLabel>
                       <Input
                         id={field.name}
                         name={field.name}
@@ -100,7 +131,11 @@ const CreateWorkspaceDialog = () => {
         </CredenzaBody>
 
         <CredenzaFooter>
-          <Button type="submit" form="create-workspace-form">
+          <Button
+            type="submit"
+            isLoading={createWorkspaceMutation.isPending}
+            form="create-workspace-form"
+          >
             Create
           </Button>
         </CredenzaFooter>

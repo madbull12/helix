@@ -1,52 +1,127 @@
-import { KindeOrganization, KindeUser } from '@kinde-oss/kinde-auth-nextjs'
-import { os } from '@orpc/server'
-import z from 'zod'
-import {
-    getKindeServerSession,
-  } from "@kinde-oss/kinde-auth-nextjs/server";
-import { requiredAuthMiddleware } from '@/app/middleware/auth';
-import { requiredWorkspaceMiddleware } from '@/app/middleware/workspace';
-import { base } from '@/app/middleware/base';
-
+import { KindeOrganization, KindeUser } from "@kinde-oss/kinde-auth-nextjs";
+import z from "zod";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { requiredAuthMiddleware } from "@/app/middleware/auth";
+import { requiredWorkspaceMiddleware } from "@/app/middleware/workspace";
+import { base } from "@/app/middleware/base";
+import { createWorkspaceSchema } from "@/lib/schemas/workspace";
+import { init, Organizations } from "@kinde/management-api-js";
+import { standardSecurityMiddleware } from "../middleware/arcjet/standard";
+import { heavyWriteMiddleware } from "../middleware/arcjet/heavy-write";
 export const workspacesList = base
-.use(requiredAuthMiddleware)
-.use(requiredWorkspaceMiddleware)
-.route({
-    method:"GET",
-    path:"/workspace",
-    summary:"Get all workspaces",
-    tags:["workspace"]
-})
+  .use(requiredAuthMiddleware)
+  .use(requiredWorkspaceMiddleware)
+  .route({
+    method: "GET",
+    path: "/workspace",
+    summary: "Get all workspaces",
+    tags: ["workspace"],
+  })
 
-.input(z.void())
-.output(z.object({
-    workspaces:z.array(
+  .input(z.void())
+  .output(
+    z.object({
+      workspaces: z.array(
         z.object({
-            id:z.string(),
-            name:z.string(),
-            avatar:z.string(),
+          id: z.string(),
+          name: z.string(),
+          avatar: z.string(),
         })
-    ),
-    user:z.custom<KindeUser<Record<string,unknown>>>(),
-    currentWorkspace:z.custom<KindeOrganization<unknown>>()
+      ),
+      user: z.custom<KindeUser<Record<string, unknown>>>(),
+      currentWorkspace: z.custom<KindeOrganization<unknown>>(),
+    })
+  )
+  .handler(async ({ context, errors }) => {
+    const { getUserOrganizations } = getKindeServerSession();
 
-}))
-.handler(async({ context,errors })=>{
-    const { getUserOrganizations } = getKindeServerSession()
+    const organizations = await getUserOrganizations();
 
-    const organizations = await getUserOrganizations()
-
-    if(!organizations) {
-        throw errors.FORBIDDEN()
+    if (!organizations) {
+      throw errors.FORBIDDEN();
     }
 
-    return { 
-        workspaces:organizations?.orgs.map((org)=>({
-            id:org.code,
-            name:org.name ?? "My workspace",
-            avatar:org.name?.charAt(0) ?? "M"
-        })),
-        user:context.user,
-        currentWorkspace:context.workspace
+    return {
+      workspaces: organizations?.orgs.map((org) => ({
+        id: org.code,
+        name: org.name ?? "My workspace",
+        avatar: org.name?.charAt(0) ?? "M",
+      })),
+      user: context.user,
+      currentWorkspace: context.workspace,
+    };
+  });
+
+export const createWorkspace = base
+  .use(requiredAuthMiddleware)
+  .use(requiredWorkspaceMiddleware)
+  .use(standardSecurityMiddleware)
+  .use(heavyWriteMiddleware)
+  .route({
+    method: "POST",
+    path: "/workspace",
+    summary: "Create a workspace",
+    tags: ["workspace"],
+  })
+  .input(createWorkspaceSchema)
+  .output(
+    z.object({
+      orgCode: z.string(),
+      workspaceName: z.string(),
+    })
+  )
+  .handler(async ({ context, errors, input }) => {
+    init({
+      kindeDomain: process.env.KINDE_DOMAIN!, 
+      clientId: process.env.KINDE_MANAGEMENT_CLIENT_ID,
+      clientSecret: process.env.KINDE_MANAGEMENT_CLIENT_SECRET,
+      
+      // audience: `${process.env.KINDE_DOMAIN}/api`
+    });
+    console.log("fsdfsd: ",context.user,context.workspace)
+
+    let data;
+
+    try {
+      data = await Organizations.createOrganization({
+        requestBody: {
+          name: input.name,
+        },
+      });
+    } catch(error) {
+      console.log("error: ", error)
+      throw errors.FORBIDDEN();
     }
-})
+
+    if (!data.organization?.code) {
+      throw errors.FORBIDDEN({
+        message: "Org code is not defined",
+      });
+    }
+
+    try {
+      await Organizations.addOrganizationUsers({
+        orgCode: data.organization.code,
+        requestBody: {
+          users: [
+            {
+              id: context.user.id,
+              roles: ["admin"],
+            },
+          ],
+        },
+      });
+    } catch {
+      console.log("fsfsd")
+      // throw errors.FORBIDDEN();
+    }
+
+    const { refreshTokens } = getKindeServerSession();
+
+    await refreshTokens()
+
+    return {
+      orgCode: data.organization.code,
+      workspaceName: input.name,
+    };
+  });

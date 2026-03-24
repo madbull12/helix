@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Providers } from "@/components/providers/tanstack-provider";
+import { Toaster } from "@/components/ui/sonner";
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
 const geistSans = Geist({
@@ -98,6 +99,7 @@ export default function RootLayout({
 
 
             </Providers>
+            <Toaster richColors closeButton position="top-center" />
           </ThemeProvider>
         </body>
       </html>
